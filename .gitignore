@@ -1,0 +1,39 @@
+# ---- Secrets: never commit ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets*.json
+credentials*.json
+
+# ---- Corpus: bring your own documents (papers are not redistributed) ----
+corpus/*
+!corpus/README.md
+
+# ---- Run-time logs (a curated example lives in examples/) ----
+rag_log.txt
+*.log
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# ---- Reports and office files (keep graded write-ups out of the repo) ----
+*.docx
+*.pptx
+*.xlsx
+~$*
+
+# ---- OS / editor / sync clutter ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

@@ -1,0 +1,460 @@
+Connected to Neo4j at neo4j://127.0.0.1:7687; model = tinyllama
+========================================================================
+USER QUESTION: How do plants remove CO2 from indoor air?
+
+SEARCH TERMS (entities): ['plant', 'co2', 'indoor', 'air']
+RELATION HINTS (ranking): ['remov']
+
+--- CYPHER QUERY 1: find matching entities ---
+MATCH (e:Entity)
+WITH e, [t IN $terms WHERE toLower(e.name) CONTAINS t] AS matched
+WHERE size(matched) > 0
+OPTIONAL MATCH (e)-[r]-(:Entity)
+WITH e, matched, count(r) AS degree
+RETURN e.key AS key, e.name AS name, e.type AS type,
+       size(matched) AS hits, degree
+ORDER BY hits DESC, degree DESC
+LIMIT $top_k
+parameters: {'terms': ['plant', 'co2', 'indoor', 'air'], 'top_k': 5}
+-> 5 row(s)
+   indoor air temperature (Concept): matched 2 term(s), 2 connection(s)
+   indoor plant species (Concept): matched 2 term(s), 2 connection(s)
+   indoor plants (Product): matched 2 term(s), 2 connection(s)
+   Single-layer planting contanining air layer (Product): matched 2 term(s), 1 connection(s)
+   Single layer planting with air (Concept): matched 2 term(s), 1 connection(s)
+
+--- CYPHER QUERY 2: relationships around those entities ---
+MATCH (a:Entity)-[r]->(b:Entity)
+WHERE a.key IN $keys OR b.key IN $keys
+RETURN a.name AS source, type(r) AS relation, b.name AS target,
+       r.evidence AS evidence, r.sources AS sources,
+       (a.key IN $keys AND b.key IN $keys) AS both_matched,
+       any(h IN $hints WHERE toLower(type(r)) CONTAINS h) AS hint_match
+ORDER BY both_matched DESC, hint_match DESC, size(coalesce(r.evidence, [])) DESC
+LIMIT $max_rels
+parameters: {'keys': ['indoor air temperature', 'indoor plant species', 'indoor plants', 'single-layer planting contanining air layer', 'single layer planting with air'], 'hints': ['remov'], 'max_rels': 12}
+-> 8 row(s)
+   Table 5 --CONTAINS--> Single-layer planting contanining air layer
+   Single layer planting with air --IS_PART_OF--> SA1~SA5
+   indoor plants --IMPROVES--> indoor air quality
+   indoor plants --REDUCE--> CO2
+   indoor plant species --PERFORMS_STRONGLY_AT--> low light level
+   indoor plant species --IS_CIRCULATED_WITH--> chamber air
+   double-layer plant --IMPROVES--> indoor air temperature
+   single-layer plant --IMPROVES--> indoor air temperature
+
+--- RAG CONTEXT (retrieved data converted to text) ---
+Facts from the knowledge graph:
+- Table 5 --contains--> Single-layer planting contanining air layer. Evidence: "Table 5. Simulation discussion modules of this study." [S1]
+- Single layer planting with air --is part of--> SA1~SA5. Evidence: "Single layer planting with air SA1~SA5" [S1]
+- indoor plants --improves--> indoor air quality. Evidence: "Extensive research has demonstrated that indoor plants can improve indoor air quality" [S2]
+- indoor plants --reduce--> CO2. Evidence: "Indoor plants have been shown to be capable of reducing most air pollutants;" [S2]
+- indoor plant species --performs strongly at--> low light level. Evidence: "The lowest compensation points detected here (10 μmol m−2 s−1) are amongst the lowest detected for any indoor plant species and represent strong performance at a low light level." [S2]
+- indoor plant species --is circulated with--> chamber air. Evidence: "It should be noted that the chamber air for this and the subsequent experiments was constantly circulated with small fans." [S2]
+- double-layer plant --improves--> indoor air temperature. Evidence: "The cooling effect of the double-layer plant on indoor air temperature was better than a single-layer plant," [S1]
+- single-layer plant --improves--> indoor air temperature. Evidence: "The cooling effect of the double-layer plant on indoor air temperature was better than a single-layer plant," [S1]
+
+Sources:
+[S1] Influence-of-Vertical-Greening-Design-of-Building-Opening-on-Indoor-Cooling-and-Ventilation.pdf
+[S2] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+--- PROMPT SENT TO THE LLM ---
+[system]
+You are a helpful assistant. Answer the question using only the context provided. If the context does not contain the answer, say that you do not know.
+
+[user]
+Context:
+Facts from the knowledge graph:
+- Table 5 --contains--> Single-layer planting contanining air layer. Evidence: "Table 5. Simulation discussion modules of this study." [S1]
+- Single layer planting with air --is part of--> SA1~SA5. Evidence: "Single layer planting with air SA1~SA5" [S1]
+- indoor plants --improves--> indoor air quality. Evidence: "Extensive research has demonstrated that indoor plants can improve indoor air quality" [S2]
+- indoor plants --reduce--> CO2. Evidence: "Indoor plants have been shown to be capable of reducing most air pollutants;" [S2]
+- indoor plant species --performs strongly at--> low light level. Evidence: "The lowest compensation points detected here (10 μmol m−2 s−1) are amongst the lowest detected for any indoor plant species and represent strong performance at a low light level." [S2]
+- indoor plant species --is circulated with--> chamber air. Evidence: "It should be noted that the chamber air for this and the subsequent experiments was constantly circulated with small fans." [S2]
+- double-layer plant --improves--> indoor air temperature. Evidence: "The cooling effect of the double-layer plant on indoor air temperature was better than a single-layer plant," [S1]
+- single-layer plant --improves--> indoor air temperature. Evidence: "The cooling effect of the double-layer plant on indoor air temperature was better than a single-layer plant," [S1]
+
+Sources:
+[S1] Influence-of-Vertical-Greening-Design-of-Building-Opening-on-Indoor-Cooling-and-Ventilation.pdf
+[S2] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+Question: How do plants remove CO2 from indoor air?
+
+Answer:
+
+--- RESPONSE (tinyllama, with graph context) ---
+Based on the given context, the question is asking how plants remove CO2 from indoor air. The answer provided is that plants remove CO2 from indoor air through their photosynthetic process, which involves absorbing carbon dioxide from the air and converting it into oxygen and sugar. This process is known as photosynthesis, and it is a natural process that plants have evolved to perform in order to survive in their environment.
+
+--- RESPONSE (tinyllama, WITHOUT graph context, for comparison) ---
+Plants remove carbon dioxide (CO2) from the air through a process called photosynthesis. During photosynthesis, plants convert sunlight into glucose (a type of sugar) through the process of photosynthesis. The CO2 produced during photosynthesis is then released back into the air as oxygen.
+
+Plants also produce oxygen through the process of respiration, which is a chemical reaction that takes place in the plant's cells. The oxygen produced during respiration is released back into the air as oxygen.
+
+In indoor environments, plants can be grown in a variety of ways, including in pots, on windowsills, and in air purifiers. These methods can help to remove CO2 from the air and release oxygen back into the indoor environment.
+Connected to Neo4j at neo4j://127.0.0.1:7687; model = tinyllama
+========================================================================
+USER QUESTION: What affects indoor temperature?
+
+SEARCH TERMS (entities): ['indoor', 'temperature']
+RELATION HINTS (ranking): ['affect']
+
+--- CYPHER QUERY 1: find matching entities ---
+MATCH (e:Entity)
+WITH e, [t IN $terms WHERE toLower(e.name) CONTAINS t] AS matched
+WHERE size(matched) > 0
+OPTIONAL MATCH (e)-[r]-(:Entity)
+WITH e, matched, count(r) AS degree
+RETURN e.key AS key, e.name AS name, e.type AS type,
+       size(matched) AS hits, degree
+ORDER BY hits DESC, degree DESC
+LIMIT $top_k
+parameters: {'terms': ['indoor', 'temperature'], 'top_k': 5}
+-> 5 row(s)
+   indoor temperature (Concept): matched 2 term(s), 2 connection(s)
+   indoor air temperature (Concept): matched 2 term(s), 2 connection(s)
+   temperature (Concept): matched 1 term(s), 12 connection(s)
+   air temperature (Concept): matched 1 term(s), 5 connection(s)
+   indoor (Location): matched 1 term(s), 3 connection(s)
+
+--- CYPHER QUERY 2: relationships around those entities ---
+MATCH (a:Entity)-[r]->(b:Entity)
+WHERE a.key IN $keys OR b.key IN $keys
+RETURN a.name AS source, type(r) AS relation, b.name AS target,
+       r.evidence AS evidence, r.sources AS sources,
+       (a.key IN $keys AND b.key IN $keys) AS both_matched,
+       any(h IN $hints WHERE toLower(type(r)) CONTAINS h) AS hint_match
+ORDER BY both_matched DESC, hint_match DESC, size(coalesce(r.evidence, [])) DESC
+LIMIT $max_rels
+parameters: {'keys': ['indoor temperature', 'indoor air temperature', 'temperature', 'air temperature', 'indoor'], 'hints': ['affect'], 'max_rels': 12}
+-> 12 row(s)
+   temperature --IS_HIGHER_THAN--> air temperature
+   temperature --AFFECTS--> ventilation
+   plants --AFFECTS--> air temperature
+   urban heat island --AFFECTS--> temperature
+   air temperature --AFFECTS--> green space
+   wind speed --INFLUENCE--> temperature
+   planting --REDUCES--> indoor temperature
+   N. CHEN ET AL --DEFINED_BY--> temperature
+   Air outlet --HAS_PROPERTY--> temperature
+   Indoor wall --HAS_PROPERTY--> temperature
+   green space --IS_LOWER_THAN--> air temperature
+   planting --IMPROVE--> temperature
+
+--- RAG CONTEXT (retrieved data converted to text) ---
+Facts from the knowledge graph:
+- temperature --is higher than--> air temperature. Evidence: "en the summer average radiation temperature tr is higher than the air temperature," [S1]
+- temperature --affects--> ventilation. Evidence: "There are many current technologies that can adjust the indoor and outdoor environments of buildings to effectively relieve the influence of urban heat island and alleviate urban" [S1]
+- plants --affects--> air temperature. Evidence: "The air temperature would be affected by the plants," [S1]
+- urban heat island --affects--> temperature. Evidence: "There are many current technologies that can adjust the indoor and outdoor environments of buildings to effectively relieve the influence of urban heat island and alleviate urban" [S1]
+- air temperature --affects--> green space. Evidence: "In general, it has been observed that the wind velocity, air temperature, MRT, and SET* are seriously affected by the different patterns of the building and green space." [S2]
+- wind speed --influence--> temperature. Evidence: "Higher wind speed can increase the indoor wind speed and enlarge the range of acceptable temperatures." [S1]
+- planting --reduces--> indoor temperature. Evidence: "As shown in Figures 6 and 7, planting has the effect of reducing indoor temperature." [S1]
+- N. CHEN ET AL --defined by--> temperature. Evidence: "ΔT: temperature of water evaporation (100 °C)—temperature of water evapotranspiration," [S1]
+- Air outlet --has property--> temperature. Evidence: "Air outlet temperature" [S1]
+- Indoor wall --has property--> temperature. Evidence: "Indoor wall temperature" [S1]
+- green space --is lower than--> air temperature. Evidence: "Air temperature, MRT, and SET* are lower in cases with green space than in those without green space." [S2]
+- planting --improve--> temperature. Evidence: "Temperature and airflow simulation results of five planting arrangement methods." [S1]
+
+Sources:
+[S1] Influence-of-Vertical-Greening-Design-of-Building-Opening-on-Indoor-Cooling-and-Ventilation.pdf
+[S2] numerical green wall.pdf
+
+--- PROMPT SENT TO THE LLM ---
+[system]
+You are a helpful assistant. Answer the question using only the context provided. If the context does not contain the answer, say that you do not know.
+
+[user]
+Context:
+Facts from the knowledge graph:
+- temperature --is higher than--> air temperature. Evidence: "en the summer average radiation temperature tr is higher than the air temperature," [S1]
+- temperature --affects--> ventilation. Evidence: "There are many current technologies that can adjust the indoor and outdoor environments of buildings to effectively relieve the influence of urban heat island and alleviate urban" [S1]
+- plants --affects--> air temperature. Evidence: "The air temperature would be affected by the plants," [S1]
+- urban heat island --affects--> temperature. Evidence: "There are many current technologies that can adjust the indoor and outdoor environments of buildings to effectively relieve the influence of urban heat island and alleviate urban" [S1]
+- air temperature --affects--> green space. Evidence: "In general, it has been observed that the wind velocity, air temperature, MRT, and SET* are seriously affected by the different patterns of the building and green space." [S2]
+- wind speed --influence--> temperature. Evidence: "Higher wind speed can increase the indoor wind speed and enlarge the range of acceptable temperatures." [S1]
+- planting --reduces--> indoor temperature. Evidence: "As shown in Figures 6 and 7, planting has the effect of reducing indoor temperature." [S1]
+- N. CHEN ET AL --defined by--> temperature. Evidence: "ΔT: temperature of water evaporation (100 °C)—temperature of water evapotranspiration," [S1]
+- Air outlet --has property--> temperature. Evidence: "Air outlet temperature" [S1]
+- Indoor wall --has property--> temperature. Evidence: "Indoor wall temperature" [S1]
+- green space --is lower than--> air temperature. Evidence: "Air temperature, MRT, and SET* are lower in cases with green space than in those without green space." [S2]
+- planting --improve--> temperature. Evidence: "Temperature and airflow simulation results of five planting arrangement methods." [S1]
+
+Sources:
+[S1] Influence-of-Vertical-Greening-Design-of-Building-Opening-on-Indoor-Cooling-and-Ventilation.pdf
+[S2] numerical green wall.pdf
+
+Question: What affects indoor temperature?
+
+Answer:
+
+--- RESPONSE (tinyllama, with graph context) ---
+The context provided does not contain any information about the answer to the question. The given facts do not directly relate to the question, and the only evidence provided is from a source that does not mention the specific factor that affects indoor temperature. Therefore, the question cannot be answered using the given facts.
+
+--- RESPONSE (tinyllama, WITHOUT graph context, for comparison) ---
+Indoor temperature is affected by several factors, including:
+
+1. Lighting: Lighting can affect indoor temperature by creating a warm or cool environment. Bright lighting can make a room feel warmer, while dim lighting can make it feel cooler.
+
+2. Ventilation: Ventilation helps to circulate air and maintain a consistent temperature. If there is no ventilation, air can build up in a room, leading to a warmer or cooler temperature.
+
+3. Humidity: Humidity can affect indoor temperature by causing moisture to accumulate in the air. This can lead to a warmer or cooler temperature, depending on the amount of moisture.
+
+4. Temperature: Temperature can also affect indoor temperature. If the room is too hot, it can cause the air to become uncomfortably warm, while if it is too cold, it can cause the air to feel too warm.
+
+5. Humidity: Humidity can also affect indoor temperature by causing moisture to accumulate in the air. This can lead to a warmer or cooler temperature, depending on the amount of moisture.
+
+6. Window treatments: Window treatments, such as curtains or blinds, can also affect indoor temperature. If they are closed, they can prevent sunlight from entering the room, which can lead
+Connected to Neo4j at neo4j://127.0.0.1:7687; model = tinyllama
+========================================================================
+USER QUESTION: What is a green wall and what does it contain?
+
+SEARCH TERMS (entities): ['green', 'wall']
+RELATION HINTS (ranking): ['contain']
+
+--- CYPHER QUERY 1: find matching entities ---
+MATCH (e:Entity)
+WITH e, [t IN $terms WHERE toLower(e.name) CONTAINS t] AS matched
+WHERE size(matched) > 0
+OPTIONAL MATCH (e)-[r]-(:Entity)
+WITH e, matched, count(r) AS degree
+RETURN e.key AS key, e.name AS name, e.type AS type,
+       size(matched) AS hits, degree
+ORDER BY hits DESC, degree DESC
+LIMIT $top_k
+parameters: {'terms': ['green', 'wall'], 'top_k': 5}
+-> 5 row(s)
+   green walls (Product): matched 2 term(s), 6 connection(s)
+   green wall (Product): matched 2 term(s), 5 connection(s)
+   green wall system (Technology): matched 2 term(s), 3 connection(s)
+   green wall plants (Product): matched 2 term(s), 2 connection(s)
+   green wall plant cultivars (Product): matched 2 term(s), 1 connection(s)
+
+--- CYPHER QUERY 2: relationships around those entities ---
+MATCH (a:Entity)-[r]->(b:Entity)
+WHERE a.key IN $keys OR b.key IN $keys
+RETURN a.name AS source, type(r) AS relation, b.name AS target,
+       r.evidence AS evidence, r.sources AS sources,
+       (a.key IN $keys AND b.key IN $keys) AS both_matched,
+       any(h IN $hints WHERE toLower(type(r)) CONTAINS h) AS hint_match
+ORDER BY both_matched DESC, hint_match DESC, size(coalesce(r.evidence, [])) DESC
+LIMIT $max_rels
+parameters: {'keys': ['green walls', 'green wall', 'green wall system', 'green wall plants', 'green wall plant cultivars'], 'hints': ['contain'], 'max_rels': 12}
+-> 12 row(s)
+   green walls --CONTAINS--> C. comosum
+   green walls --REDUCE--> CO2
+   green wall --REDUCES--> CO2
+   green walls --CALCULATED_BY--> CADR
+   green walls --CALCULATED_BY--> ACH
+   green wall --REQUIRES--> light
+   green walls --DRAW_DOWN--> CO2
+   green wall --DRAW_DOWN_PERFORMANCE--> CO2
+   green wall system --AFFECTS--> CO2
+   green wall system --REMOVES--> CO2
+   green wall system --DRAW_DOWN--> CO2
+   green walls --LOCATED_IN--> Room
+
+--- RAG CONTEXT (retrieved data converted to text) ---
+Facts from the knowledge graph:
+- green walls --contains--> C. comosum. Evidence: "Green walls containing variegated C. comosum with substrate ventilation were the best performing green wall permutation." [S1]
+- green walls --reduce--> CO2. Evidence: "We assessed an active green wall for its potential to reduce CO2 in chambers and a test room." [S1]
+- green wall --reduces--> CO2. Evidence: "a 1-m2 green wall was capable of significant quantifiable reductions of high CO2 concentrations within a sealed room environment." [S1]
+- green walls --calculated by--> CADR. Evidence: "allowing the calculation of clean air delivery rate (CADR)" [S1]
+- green walls --calculated by--> ACH. Evidence: "allowing the calculation of clean air delivery rate (CADR) and air changes per hour (ACH)" [S1]
+- green wall --requires--> light. Evidence: "thus more light than this level should be supplied if green wall" [S1]
+- green walls --draw down--> CO2. Evidence: "Rates of CO2 draw down were modest under typical brightly lit indoor conditions (50 μmol m−2 s−1)" [S1]
+- green wall --draw down performance--> CO2. Evidence: "Green wall CO2 draw down performance" [S1]
+- green wall system --affects--> CO2. Evidence: "We thus tested the effect of substrate ventilation on CO2 re- moval capacity of the green wall system." [S1]
+- green wall system --removes--> CO2. Evidence: "To test the capacity of the green wall system to remove CO2 on a full-sized room scale" [S1]
+- green wall system --draw down--> CO2. Evidence: "To test the effects of light intensity and substrate ventila- tion rate on green wall CO2 draw down" [S1]
+- green walls --located in--> Room. Evidence: "tested in a 15.65-m3 sealed simulation room" [S1]
+
+Sources:
+[S1] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+--- PROMPT SENT TO THE LLM ---
+[system]
+You are a helpful assistant. Answer the question using only the context provided. If the context does not contain the answer, say that you do not know.
+
+[user]
+Context:
+Facts from the knowledge graph:
+- green walls --contains--> C. comosum. Evidence: "Green walls containing variegated C. comosum with substrate ventilation were the best performing green wall permutation." [S1]
+- green walls --reduce--> CO2. Evidence: "We assessed an active green wall for its potential to reduce CO2 in chambers and a test room." [S1]
+- green wall --reduces--> CO2. Evidence: "a 1-m2 green wall was capable of significant quantifiable reductions of high CO2 concentrations within a sealed room environment." [S1]
+- green walls --calculated by--> CADR. Evidence: "allowing the calculation of clean air delivery rate (CADR)" [S1]
+- green walls --calculated by--> ACH. Evidence: "allowing the calculation of clean air delivery rate (CADR) and air changes per hour (ACH)" [S1]
+- green wall --requires--> light. Evidence: "thus more light than this level should be supplied if green wall" [S1]
+- green walls --draw down--> CO2. Evidence: "Rates of CO2 draw down were modest under typical brightly lit indoor conditions (50 μmol m−2 s−1)" [S1]
+- green wall --draw down performance--> CO2. Evidence: "Green wall CO2 draw down performance" [S1]
+- green wall system --affects--> CO2. Evidence: "We thus tested the effect of substrate ventilation on CO2 re- moval capacity of the green wall system." [S1]
+- green wall system --removes--> CO2. Evidence: "To test the capacity of the green wall system to remove CO2 on a full-sized room scale" [S1]
+- green wall system --draw down--> CO2. Evidence: "To test the effects of light intensity and substrate ventila- tion rate on green wall CO2 draw down" [S1]
+- green walls --located in--> Room. Evidence: "tested in a 15.65-m3 sealed simulation room" [S1]
+
+Sources:
+[S1] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+Question: What is a green wall and what does it contain?
+
+Answer:
+
+--- RESPONSE (tinyllama, with graph context) ---
+The context provided does not contain the answer to the question. The green wall is a type of indoor plant that contains various plants and is designed to absorb and remove carbon dioxide (CO2) from the air. The green wall contains a variety of plants, such as C. comosum, which are known for their ability to absorb CO2. The green wall is typically installed in a room or chamber, where it is exposed to high levels of CO2, and is designed to reduce the concentration of CO2 within the environment. The green wall is a type of indoor plant that is used in phytoremediation, which is the removal of pollutants from the environment through the use of plants.
+
+--- RESPONSE (tinyllama, WITHOUT graph context, for comparison) ---
+A green wall is a type of vertical garden that is designed to provide shade and greenery to a space. It is typically made up of a series of vertical panels or slats that are filled with plants, herbs, or other greenery. The plants are grown in a specially designed system that allows them to grow in a vertical position, providing shade and absorbing carbon dioxide.
+
+The green wall is typically made up of a series of panels that are arranged in a pattern or design. The panels are typically made of a material that is water-resistant and can withstand exposure to the elements. The panels are typically made up of a combination of different plants, such as herbs, vegetables, and flowers.
+
+The green wall is designed to provide shade and reduce the need for artificial lighting, which can be expensive and energy-intensive. It also helps to absorb carbon dioxide, which is a greenhouse gas that contributes to climate change. The green wall can be used in a variety of spaces, including offices, restaurants, and even homes.
+Connected to Neo4j at neo4j://127.0.0.1:7687; model = tinyllama
+========================================================================
+USER QUESTION: Who wrote about green wall technology?
+
+SEARCH TERMS (entities): ['green', 'wall', 'technology']
+RELATION HINTS (ranking): ['author']
+
+--- CYPHER QUERY 1: find matching entities ---
+MATCH (e:Entity)
+WITH e, [t IN $terms WHERE toLower(e.name) CONTAINS t] AS matched
+WHERE size(matched) > 0
+OPTIONAL MATCH (e)-[r]-(:Entity)
+WITH e, matched, count(r) AS degree
+RETURN e.key AS key, e.name AS name, e.type AS type,
+       size(matched) AS hits, degree
+ORDER BY hits DESC, degree DESC
+LIMIT $top_k
+parameters: {'terms': ['green', 'wall', 'technology'], 'top_k': 5}
+-> 5 row(s)
+   active green wall technology (Technology): matched 3 term(s), 0 connection(s)
+   green walls (Product): matched 2 term(s), 6 connection(s)
+   green wall (Product): matched 2 term(s), 5 connection(s)
+   green wall system (Technology): matched 2 term(s), 3 connection(s)
+   green wall plants (Product): matched 2 term(s), 2 connection(s)
+
+--- CYPHER QUERY 2: relationships around those entities ---
+MATCH (a:Entity)-[r]->(b:Entity)
+WHERE a.key IN $keys OR b.key IN $keys
+RETURN a.name AS source, type(r) AS relation, b.name AS target,
+       r.evidence AS evidence, r.sources AS sources,
+       (a.key IN $keys AND b.key IN $keys) AS both_matched,
+       any(h IN $hints WHERE toLower(type(r)) CONTAINS h) AS hint_match
+ORDER BY both_matched DESC, hint_match DESC, size(coalesce(r.evidence, [])) DESC
+LIMIT $max_rels
+parameters: {'keys': ['active green wall technology', 'green walls', 'green wall', 'green wall system', 'green wall plants'], 'hints': ['author'], 'max_rels': 12}
+-> 12 row(s)
+   green walls --DRAW_DOWN--> CO2
+   green walls --REDUCE--> CO2
+   green walls --CONTAINS--> C. comosum
+   green walls --CALCULATED_BY--> CADR
+   green walls --CALCULATED_BY--> ACH
+   green wall --REQUIRES--> light
+   green wall --REDUCES--> CO2
+   green wall --DRAW_DOWN_PERFORMANCE--> CO2
+   green wall system --AFFECTS--> CO2
+   green wall system --REMOVES--> CO2
+   green wall system --DRAW_DOWN--> CO2
+   green walls --LOCATED_IN--> Room
+
+--- RAG CONTEXT (retrieved data converted to text) ---
+Facts from the knowledge graph:
+- green walls --draw down--> CO2. Evidence: "Rates of CO2 draw down were modest under typical brightly lit indoor conditions (50 μmol m−2 s−1)" [S1]
+- green walls --reduce--> CO2. Evidence: "We assessed an active green wall for its potential to reduce CO2 in chambers and a test room." [S1]
+- green walls --contains--> C. comosum. Evidence: "Green walls containing variegated C. comosum with substrate ventilation were the best performing green wall permutation." [S1]
+- green walls --calculated by--> CADR. Evidence: "allowing the calculation of clean air delivery rate (CADR)" [S1]
+- green walls --calculated by--> ACH. Evidence: "allowing the calculation of clean air delivery rate (CADR) and air changes per hour (ACH)" [S1]
+- green wall --requires--> light. Evidence: "thus more light than this level should be supplied if green wall" [S1]
+- green wall --reduces--> CO2. Evidence: "a 1-m2 green wall was capable of significant quantifiable reductions of high CO2 concentrations within a sealed room environment." [S1]
+- green wall --draw down performance--> CO2. Evidence: "Green wall CO2 draw down performance" [S1]
+- green wall system --affects--> CO2. Evidence: "We thus tested the effect of substrate ventilation on CO2 re- moval capacity of the green wall system." [S1]
+- green wall system --removes--> CO2. Evidence: "To test the capacity of the green wall system to remove CO2 on a full-sized room scale" [S1]
+- green wall system --draw down--> CO2. Evidence: "To test the effects of light intensity and substrate ventila- tion rate on green wall CO2 draw down" [S1]
+- green walls --located in--> Room. Evidence: "tested in a 15.65-m3 sealed simulation room" [S1]
+
+Sources:
+[S1] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+--- PROMPT SENT TO THE LLM ---
+[system]
+You are a helpful assistant. Answer the question using only the context provided. If the context does not contain the answer, say that you do not know.
+
+[user]
+Context:
+Facts from the knowledge graph:
+- green walls --draw down--> CO2. Evidence: "Rates of CO2 draw down were modest under typical brightly lit indoor conditions (50 μmol m−2 s−1)" [S1]
+- green walls --reduce--> CO2. Evidence: "We assessed an active green wall for its potential to reduce CO2 in chambers and a test room." [S1]
+- green walls --contains--> C. comosum. Evidence: "Green walls containing variegated C. comosum with substrate ventilation were the best performing green wall permutation." [S1]
+- green walls --calculated by--> CADR. Evidence: "allowing the calculation of clean air delivery rate (CADR)" [S1]
+- green walls --calculated by--> ACH. Evidence: "allowing the calculation of clean air delivery rate (CADR) and air changes per hour (ACH)" [S1]
+- green wall --requires--> light. Evidence: "thus more light than this level should be supplied if green wall" [S1]
+- green wall --reduces--> CO2. Evidence: "a 1-m2 green wall was capable of significant quantifiable reductions of high CO2 concentrations within a sealed room environment." [S1]
+- green wall --draw down performance--> CO2. Evidence: "Green wall CO2 draw down performance" [S1]
+- green wall system --affects--> CO2. Evidence: "We thus tested the effect of substrate ventilation on CO2 re- moval capacity of the green wall system." [S1]
+- green wall system --removes--> CO2. Evidence: "To test the capacity of the green wall system to remove CO2 on a full-sized room scale" [S1]
+- green wall system --draw down--> CO2. Evidence: "To test the effects of light intensity and substrate ventila- tion rate on green wall CO2 draw down" [S1]
+- green walls --located in--> Room. Evidence: "tested in a 15.65-m3 sealed simulation room" [S1]
+
+Sources:
+[S1] Green wall technology for the phytoremediation of indoor air a system for the reduction of high CO2 concentrations.pdf
+
+Question: Who wrote about green wall technology?
+
+Answer:
+
+--- RESPONSE (tinyllama, with graph context) ---
+The context provided does not contain any information about who wrote about green wall technology.
+
+--- RESPONSE (tinyllama, WITHOUT graph context, for comparison) ---
+The article you are referring to is about green wall technology, which is a type of vertical gardening that uses plants and other greenery to create a living wall. The article was written by a journalist named Sarah Knapton, who is a contributing editor at the British science and technology magazine, Nature.
+Connected to Neo4j at neo4j://127.0.0.1:7687; model = tinyllama
+========================================================================
+USER QUESTION: What is the capital of France?
+
+SEARCH TERMS (entities): ['capital', 'france']
+RELATION HINTS (ranking): []
+
+--- CYPHER QUERY 1: find matching entities ---
+MATCH (e:Entity)
+WITH e, [t IN $terms WHERE toLower(e.name) CONTAINS t] AS matched
+WHERE size(matched) > 0
+OPTIONAL MATCH (e)-[r]-(:Entity)
+WITH e, matched, count(r) AS degree
+RETURN e.key AS key, e.name AS name, e.type AS type,
+       size(matched) AS hits, degree
+ORDER BY hits DESC, degree DESC
+LIMIT $top_k
+parameters: {'terms': ['capital', 'france'], 'top_k': 5}
+-> 0 row(s)
+
+No graph relationships found; falling back to a text search of the stored chunks.
+
+--- CYPHER QUERY 3 (fallback): chunks containing the terms ---
+MATCH (d:Document)-[:HAS_CHUNK]->(c:Chunk)
+WITH d, c, [t IN $terms WHERE toLower(c.text) CONTAINS t] AS matched
+WHERE size(matched) > 0
+RETURN d.name AS document, c.index AS chunk, c.text AS text, size(matched) AS hits
+ORDER BY hits DESC
+LIMIT $max_chunks
+parameters: {'terms': ['capital', 'france'], 'max_chunks': 2}
+-> 0 row(s)
+
+--- RAG CONTEXT (retrieved data converted to text) ---
+(nothing was retrieved from the graph)
+
+--- PROMPT SENT TO THE LLM ---
+[system]
+You are a helpful assistant. Answer the question using only the context provided. If the context does not contain the answer, say that you do not know.
+
+[user]
+Context:
+(no relevant information was found in the knowledge graph)
+
+Question: What is the capital of France?
+
+Answer:
+
+--- RESPONSE (tinyllama, with graph context) ---
+Answer: France's capital is Paris.
+
+--- RESPONSE (tinyllama, WITHOUT graph context, for comparison) ---
+The capital of France is Paris.
